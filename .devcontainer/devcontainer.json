@@ -30,7 +30,8 @@
 				"charliermarsh.ruff",
 				"wayou.vscode-todo-highlight",
 				"patbenatar.advanced-new-file",
-				"ms-python.isort"
+				"ms-python.isort",
+				"tamasfe.even-better-toml"
 			]
 		}
 	}
