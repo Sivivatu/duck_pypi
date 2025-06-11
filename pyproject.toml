@@ -1,0 +1,24 @@
+[project]
+name = "duck-pypi"
+version = "0.1.0"
+authors = [
+    { name = "Paul Houghton", email = "7496456+Sivivatu@users.noreply.github.com" },
+]
+description = "Data Engineering project connecting DuckDb to final analysis"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "duckdb>=1.3.0",
+    "google-auth>=2.40.3",
+    "google-cloud-bigquery>=3.34.0",
+    "google-cloud-bigquery-storage>=2.32.0",
+    "loguru>=0.7.3",
+    "pandas>=2.3.0",
+    "pyarrow>=20.0.0",
+    "pydantic>=2.11.5",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.11.13",
+]
