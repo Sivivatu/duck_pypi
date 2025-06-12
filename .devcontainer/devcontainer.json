@@ -3,6 +3,7 @@
 	"name": "Python 3 (ingestion/transformation)",
 	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
 	"build": {
+		"context": "..",
 		"dockerfile": "Dockerfile",
 		"target": "development",
 		"args": { 

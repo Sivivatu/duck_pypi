@@ -15,3 +15,13 @@ ENV UV_LINK_MODE=copy \
 
 # Stage 2: Development
 FROM base AS development
+
+# Set the working directory
+WORKDIR /workspaces/duck_pypi
+
+# Copy the project into the container
+COPY .. /workspaces/duck_pypi
+
+# Install the project in editable mode
+RUN uv run pip install --no-cache-dir -e .
+
