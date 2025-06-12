@@ -12,7 +12,7 @@ from ingestion.models import PypiJobParameters
 PYPI_PUBLIC_DATASET = "bigquery-public-data.pypi.file_downloads"
 
 def get_bigquery_client(
-    project_name: str, credentials_path: str = None
+    params: PypiJobParameters, credentials_path: str = None
 ) -> bigquery.Client:
     """
     Create a BigQuery client using the provided project name and optional credentials path.
@@ -35,7 +35,7 @@ def get_bigquery_client(
                     service_account_path
                 )
             )
-            return bigquery.Client(project=project_name, credentials=credentials)
+            return bigquery.Client(project=params.gcp_project, credentials=credentials)
         raise EnvironmentError(
             """
             Service account credentials not found. 

@@ -7,11 +7,11 @@ from ingestion.bigquery import (
     build_pypi_query,
 )
 
+CREDENTIALS_PATH = "/root/.config/gcloud/duck-pypi-db0ea102a482.json"
+
 
 def main() -> None:
-    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = (
-        "/root/.config/gcloud/duck-pypi-db0ea102a482.json"
-    )
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = CREDENTIALS_PATH
     print("Ingestion pipeline started.")
 
     # Initialize BigQuery client
