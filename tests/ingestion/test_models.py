@@ -121,7 +121,7 @@ def test_build_pypi_query():
     SELECT
         *
     FROM
-        'bigquery-public-data.pypi.test_table'
+        `bigquery-public-data.pypi.test_table`
     WHERE
         project = 'duckdb'
         AND timestamp >= TIMESTAMP('2019-04-01')
