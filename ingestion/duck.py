@@ -1,108 +1,88 @@
-from typing import List
+import duckdb
+import os
+import pyarrow as pa
 from loguru import logger
 
-def create_table_from_dataframe(duckdb_conn, table_name: str, dataframe: str) -> None:
-    """
-    Create a DuckDB table from a Pandas DataFrame.
 
-    Args:
-        duckdb_conn: An active DuckDB connection.
-        table_name: The name of the DuckDB table to be created.
-        dataframe: A Pandas DataFrame to be converted into a DuckDB table.
-    """
-    duckdb_conn.sql(
-        f"""
-        CREATE TABLE {table_name} AS 
-            SELECT
-                * 
-            FROM {dataframe}
-        """
-    )
+class ArrowTableLoadingBuffer:
+    def __init__(
+        self,
+        duckdb_schema: str,
+        pyarrow_schema: pa.Schema,
+        database_name: str,
+        table_name: str,
+        dryrun: bool = False,
+        destination="local",
+        chunk_size: int = 50000,
+    ):
+        self.duckdb_schema = duckdb_schema
+        self.pyarrow_schema = pyarrow_schema
+        self.dryrun = dryrun
+        self.database_name = database_name
+        self.table_name = table_name
+        self.total_inserted = 0
+        self.conn = self.initialize_connection(destination, duckdb_schema)
+        self.primary_key_exists = "PRIMARY KEY" in duckdb_schema.upper()
+        self.chunk_size = chunk_size
 
-def load_aws_credentials(duckdb_conn, aws_profile: str = None) -> None:
-    """
-    Load AWS credentials from the specified profile into environment variables.
+    def initialize_connection(self, destination, sql):
+        if destination == "md":
+            logger.info("Connecting to MotherDuck...")
+            if not os.environ.get("motherduck_token"):
+                raise ValueError(
+                    "MotherDuck token is required. Set the environment variable 'MOTHERDUCK_TOKEN'."
+                )
+            conn = duckdb.connect("md:")
+            if not self.dryrun:
+                logger.info(
+                    f"Creating database {self.database_name} if it doesn't exist"
+                )
+                conn.execute(f"CREATE DATABASE IF NOT EXISTS {self.database_name}")
+                conn.execute(f"USE {self.database_name}")
+        else:
+            conn = duckdb.connect(database=f"{self.database_name}.db")
+        if not self.dryrun:
+            conn.execute(sql)
+        return conn
 
-    Args:
-        aws_profile: The name of the AWS profile to load credentials from. If None, uses the default profile.
-    """
-    duckdb_conn.sql(f"CALL load_aws_credentials('{aws_profile}');")
+    def insert(self, table: pa.Table):
+        if not self.dryrun:
+            total_rows = table.num_rows
+            for batch_start in range(0, total_rows, self.chunk_size):
+                batch_end = min(batch_start + self.chunk_size, total_rows)
+                chunk = table.slice(batch_start, batch_end - batch_start)
+                self.insert_chunk(chunk)
+                logger.info(f"Inserted chunk {batch_start} to {batch_end}")
+            self.total_inserted += total_rows
+            logger.info(f"Total inserted: {self.total_inserted} rows")
 
-def write_to_s3_from_duckdb(
-    duckdb_conn, s3_path: str, table_name: str, timestamp_column: str
-) -> None:
-    """
-    Write a DuckDB table to an S3 path in the specified file format.
+    def insert_chunk(self, chunk: pa.Table):
+        self.conn.register("buffer_table", chunk)
+        if self.primary_key_exists:
+            insert_query = f"""
+            INSERT OR REPLACE INTO {self.table_name} SELECT * FROM buffer_table
+            """
+        else:
+            insert_query = f"INSERT INTO {self.table_name} SELECT * FROM buffer_table"
+        self.conn.execute(insert_query)
+        self.conn.unregister("buffer_table")
 
-    Args:
-        duckdb_conn: An active DuckDB connection.
-        s3_path: The S3 path where the file will be written.
-        table_name: The name of the DuckDB table to be written to S3.
-        timestamp_column: The name of the timestamp column used for partitioning.
-        """
-    logger.info(f"Writing table {table_name} to {s3_path}/{table_name}.")
-    duckdb_conn.sql(
-        f"""
-        COPY (
-            SELECT 
-                *,
-                YEAR({timestamp_column}) AS year,,
-                MONTH({timestamp_column}) AS month,
-            FROM {table_name}) 
-        TO '{s3_path}/{table_name}' 
-        (FORMAT PARQUET, PARTITION_BY (year, month), OVERWRITE_OR_IGNORE 1, COMPRESSION 'ZSTD', ROW_GROUP_SIZE 1000000);
-        """
-    )
+    def load_aws_credentials(self, profile: str):
+        logger.info(f"Loading AWS credentials for profile: {profile}")
+        self.conn.sql(f"CALL load_aws_credentials('{profile}');")
 
-def connect_to_md(duckdb_conn, motherduck_token: str) -> None:
-    """
-    Connect to MotherDuck using the provided token.
-
-    Args:
-        duckdb_conn: An active DuckDB connection.
-        motherduck_token: The token used for authentication with MotherDuck.
-    """
-    duckdb_conn.sql("INSTALL md;")
-    duckdb_conn.sql("LOAD md;")
-    duckdb_conn.sql(f"SET motherduck_token='{motherduck_token}';")
-    duckdb_conn.sql("ATTACH 'md:';")
-
-def write_to_md_from_duckdb(
-    duckdb_conn, table_name: str,
-    local_database: str, 
-    remote_database: str, 
-    timestamp_column: str,
-    start_date: str,
-    end_date: str,
-) -> None:
-    """
-    Write a DuckDB table to MotherDuck.
-
-    Args:
-        duckdb_conn: An active DuckDB connection.
-        table_name: The name of the DuckDB table to be written to MotherDuck.
-        local_database: The name of the local DuckDB database.
-        remote_database: The name of the remote MotherDuck database.
-        timestamp_column: The name of the timestamp column used for partitioning.
-        start_date: The start date for filtering data.
-        end_date: The end date for filtering data.
-    """
-    logger.info(f"Writing table {table_name} to MotherDuck at {remote_database}.")
-    duckdb_conn.sql(f"CREATE DATABASE IF NOT EXISTS {remote_database};")
-    duckdb_conn.sql(
-        f"""
-        CREATE TABLE IF NOT EXISTS {remote_database}.{table_name} AS 
-            SELECT * 
-            FROM {local_database}.{table_name}
-        """
+    def write_to_s3(self, s3_path: str, timestamp_column: str, aws_profile: str):
+        self.load_aws_credentials(aws_profile)
+        logger.info(f"Writing data to S3 {s3_path}/{self.table_name}")
+        self.conn.sql(
+            f"""
+            COPY (
+                SELECT *,
+                    YEAR({timestamp_column}) AS year, 
+                    MONTH({timestamp_column}) AS month 
+                FROM {self.table_name}
+            ) 
+            TO '{s3_path}/{self.table_name}' 
+            (FORMAT PARQUET, PARTITION_BY (year, month), OVERWRITE_OR_IGNORE 1, COMPRESSION 'ZSTD', ROW_GROUP_SIZE 1000000);
+            """
         )
-    duckdb_conn.sql(
-        f"DELETE FROM {remote_database}.{table_name} WHERE {timestamp_column} BETWEEN '{start_date}' AND '{end_date}'"
-    )
-    duckdb_conn.sql(
-        f"""
-        INSERT INTO {remote_database}.{table_name}
-        SELECT * 
-        FROM {local_database}.{table_name}
-        """
-    )

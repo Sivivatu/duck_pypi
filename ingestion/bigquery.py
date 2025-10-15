@@ -1,66 +1,48 @@
 import os
-import time
-
 from google.cloud import bigquery
 from google.oauth2 import service_account
 from google.auth.exceptions import DefaultCredentialsError
 from loguru import logger
+import time
+from ingestion.models import PypiJobParameters, FileDownloads
 import pyarrow as pa
-
-from ingestion.models import PypiJobParameters
 
 # PYPI_PUBLIC_DATASET = "bigquery-public-data.pypi.file_downloads"
 
-
-def get_bigquery_client(
-    params: PypiJobParameters, credentials_path: str = None
-) -> bigquery.Client:
+def build_pypi_query(
+    params: PypiJobParameters
+) -> str:
+    # Query the public PyPI dataset from BigQuery
+    # /!\ This is a large dataset, filter accordingly /!\
+    pypi_FDQN_table = f"bigquery-public-data.pypi.{params.table_name}"
+    return f"""
+    SELECT
+        *
+    FROM
+        `{pypi_FDQN_table}`
+    WHERE
+        project = '{params.pypi_project}'
+        AND {params.timestamp_column} >= TIMESTAMP('{params.start_date}')
+        AND {params.timestamp_column} < TIMESTAMP('{params.end_date}')
     """
-    Create a BigQuery client using the provided project name and optional credentials path.
 
-    Args:
-        project_name (str): The Google Cloud project name.
-        credentials_path (str): Path to the service account key file. If None, uses default credentials.
 
-    Returns:
-        bigquery.Client: A BigQuery client instance.
-    """
+def get_bigquery_client(project_name: str) -> bigquery.Client:
+    """Get Big Query client"""
     try:
-        # Read raw env var and sanitize surrounding quotes if present.
-        raw_env_path: str = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+        service_account_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
 
-        def _strip_surrounding_quotes(v: str) -> str | None:
-            if not v:
-                return None
-            if (v.startswith('"') and v.endswith('"')) or (
-                v.startswith("'") and v.endswith("'")
-            ):
-                return v[1:-1]
-            return v
-
-        # Prefer an explicit credentials_path argument when provided; only
-        # fall back to the environment variable if the argument is None.
-        if credentials_path:
-            service_account_path = credentials_path
-            logger.info(f"Using credentials_path argument: {service_account_path}")
-        else:
-            service_account_path = _strip_surrounding_quotes(raw_env_path)
-            logger.info(f"Raw GOOGLE_APPLICATION_CREDENTIALS env: {raw_env_path}")
-            logger.info(f"Using service account path from env: {service_account_path}")
-
-        if service_account_path and os.path.exists(service_account_path):
-            credentials: service_account.Credentials = (
-                service_account.Credentials.from_service_account_file(
-                    service_account_path
-                )
+        if service_account_path:
+            credentials = service_account.Credentials.from_service_account_file(
+                service_account_path
             )
-            return bigquery.Client(project=params.gcp_project, credentials=credentials)
+            bigquery_client = bigquery.Client(
+                project=project_name, credentials=credentials
+            )
+            return bigquery_client
 
         raise EnvironmentError(
-            """
-            Service account credentials not found. 
-            Please set the GOOGLE_APPLICATION_CREDENTIALS environment variable or provide a valid credentials path.
-            """
+            "No valid credentials found for BigQuery authentication."
         )
 
     except DefaultCredentialsError as creds_error:
@@ -68,49 +50,22 @@ def get_bigquery_client(
 
 
 def get_bigquery_result(
-    query_str: str, bigquery_client: bigquery.Client
+    query_str: str, bigquery_client: bigquery.Client, model: FileDownloads
 ) -> pa.Table:
-    """
-    Execute a BigQuery SQL query and yield the results as a pyarrow table.
-    Args:
-        query_str (str): The SQL query to execute.
-        bigquery_client (bigquery.Client): The BigQuery client instance.
-    Returns:
-        pa.Table: The results of the query as a pyarrow table.
-    """
+    """Get query result from BigQuery and yield rows as dictionaries."""
     try:
-        # start measuring time for query execution
-        start_time: float = time.time()
-        logger.info(f"Executing query: {query_str}")
-        # execute the query and convert the result to a DataFrame
-        pa_table: pa.Table = bigquery_client.query(query_str).to_arrow()
-        # measure elapsed time for query execution
-        elapsed_time: float = time.time() - start_time
+        # Start measuring time
+        start_time = time.time()
+        # Run the query and directly load into a DataFrame
+        logger.info(f"Running query: {query_str}")
+        # dataframe = bigquery_client.query(query_str).to_dataframe(dtypes=FileDownloads().pandas_dtypes)
+        pa_tbl = bigquery_client.query(query_str).to_arrow()
+        # Log the time taken for query execution and data loading
+        elapsed_time = time.time() - start_time
+        logger.info(f"Query executed and data loaded in {elapsed_time:.2f} seconds")
+        # Iterate over DataFrame rows and yield as dictionaries
+        return pa_tbl
 
-        logger.info(f"Query executed successfully in {elapsed_time:.2f} seconds.")
-        # iterate over the DataFrame in chunks if needed
-        return pa_table
     except Exception as e:
         logger.error(f"Error running query: {e}")
         raise
-
-
-def build_pypi_query(
-    params: PypiJobParameters
-) -> str:
-    """
-    Build the SQL query to retrieve package information from the PyPI database.
-    Returns:
-        str: The SQL query string.
-    """
-    pypi_public_dataset = f"bigquery-public-data.pypi.{params.table_name}"
-    return f"""
-    SELECT
-        *
-    FROM
-        `{pypi_public_dataset}`
-    WHERE
-        project = '{params.pypi_project}'
-        AND timestamp >= TIMESTAMP('{params.start_date}')
-        AND timestamp < TIMESTAMP('{params.end_date}')
-    """
