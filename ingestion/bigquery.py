@@ -26,10 +26,28 @@ def get_bigquery_client(
         bigquery.Client: A BigQuery client instance.
     """
     try:
-        service_account_path: str = os.environ.get(
-            "GOOGLE_APPLICATION_CREDENTIALS", credentials_path
-        )
-        logger.info(f"Using service account path: {service_account_path}")
+        # Read raw env var and sanitize surrounding quotes if present.
+        raw_env_path: str = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+
+        def _strip_surrounding_quotes(v: str) -> str | None:
+            if not v:
+                return None
+            if (v.startswith('"') and v.endswith('"')) or (
+                v.startswith("'") and v.endswith("'")
+            ):
+                return v[1:-1]
+            return v
+
+        # Prefer an explicit credentials_path argument when provided; only
+        # fall back to the environment variable if the argument is None.
+        if credentials_path:
+            service_account_path = credentials_path
+            logger.info(f"Using credentials_path argument: {service_account_path}")
+        else:
+            service_account_path = _strip_surrounding_quotes(raw_env_path)
+            logger.info(f"Raw GOOGLE_APPLICATION_CREDENTIALS env: {raw_env_path}")
+            logger.info(f"Using service account path from env: {service_account_path}")
+
         if service_account_path and os.path.exists(service_account_path):
             credentials: service_account.Credentials = (
                 service_account.Credentials.from_service_account_file(
@@ -37,6 +55,7 @@ def get_bigquery_client(
                 )
             )
             return bigquery.Client(project=params.gcp_project, credentials=credentials)
+
         raise EnvironmentError(
             """
             Service account credentials not found. 
@@ -89,7 +108,7 @@ def build_pypi_query(
     SELECT
         *
     FROM
-        '{pypi_public_dataset}'
+        `{pypi_public_dataset}`
     WHERE
         project = '{params.pypi_project}'
         AND timestamp >= TIMESTAMP('{params.start_date}')
