@@ -5,11 +5,12 @@ from google.cloud import bigquery
 from google.oauth2 import service_account
 from google.auth.exceptions import DefaultCredentialsError
 from loguru import logger
-import pandas as pd
+import pyarrow as pa
 
 from ingestion.models import PypiJobParameters
 
-PYPI_PUBLIC_DATASET = "bigquery-public-data.pypi.file_downloads"
+# PYPI_PUBLIC_DATASET = "bigquery-public-data.pypi.file_downloads"
+
 
 def get_bigquery_client(
     params: PypiJobParameters, credentials_path: str = None
@@ -28,7 +29,7 @@ def get_bigquery_client(
         service_account_path: str = os.environ.get(
             "GOOGLE_APPLICATION_CREDENTIALS", credentials_path
         )
-        print(f"Using service account path: {service_account_path}")
+        logger.info(f"Using service account path: {service_account_path}")
         if service_account_path and os.path.exists(service_account_path):
             credentials: service_account.Credentials = (
                 service_account.Credentials.from_service_account_file(
@@ -49,47 +50,48 @@ def get_bigquery_client(
 
 def get_bigquery_result(
     query_str: str, bigquery_client: bigquery.Client
-) -> pd.DataFrame:
+) -> pa.Table:
     """
-    Execute a BigQuery SQL query and yield the results as a pandas DataFrame.
+    Execute a BigQuery SQL query and yield the results as a pyarrow table.
     Args:
         query_str (str): The SQL query to execute.
         bigquery_client (bigquery.Client): The BigQuery client instance.
     Returns:
-        pd.DataFrame: The results of the query as a pandas DataFrame.
+        pa.Table: The results of the query as a pyarrow table.
     """
     try:
         # start measuring time for query execution
         start_time: float = time.time()
         logger.info(f"Executing query: {query_str}")
         # execute the query and convert the result to a DataFrame
-        dataframe: pd.DataFrame = bigquery_client.query(query_str).to_dataframe()
+        pa_table: pa.Table = bigquery_client.query(query_str).to_arrow()
         # measure elapsed time for query execution
         elapsed_time: float = time.time() - start_time
 
         logger.info(f"Query executed successfully in {elapsed_time:.2f} seconds.")
         # iterate over the DataFrame in chunks if needed
-        return dataframe
+        return pa_table
     except Exception as e:
         logger.error(f"Error running query: {e}")
         raise
 
 
 def build_pypi_query(
-        params: PypiJobParameters, pypi_public_dataset: str = PYPI_PUBLIC_DATASET
+    params: PypiJobParameters
 ) -> str:
     """
     Build the SQL query to retrieve package information from the PyPI database.
     Returns:
         str: The SQL query string.
     """
+    pypi_public_dataset = f"bigquery-public-data.pypi.{params.table_name}"
     return f"""
     SELECT
         *
     FROM
-        `{pypi_public_dataset}`
+        '{pypi_public_dataset}'
     WHERE
         project = '{params.pypi_project}'
-        AND timestamp >= '{params.start_date}'
-        AND timestamp < '{params.end_date}'
+        AND timestamp >= TIMESTAMP('{params.start_date}')
+        AND timestamp < TIMESTAMP('{params.end_date}')
     """
