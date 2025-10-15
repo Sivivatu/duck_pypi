@@ -21,3 +21,13 @@ format:
 
 test:
 	uv run pytest tests -v --cov=ingestion
+
+aws-sso-creds:
+# DuckDB aws creds doesn't support loading from sso, so this create temporary creds file
+	aws configure export-credentials --profile $$AWS_PROFILE --format env-no-export | \
+	grep -E 'AWS_ACCESS_KEY_ID|AWS_SECRET_ACCESS_KEY|AWS_SESSION_TOKEN' | \
+	sed -e 's/AWS_ACCESS_KEY_ID/aws_access_key_id/' \
+		-e 's/AWS_SECRET_ACCESS_KEY/aws_secret_access_key/' \
+		-e 's/AWS_SESSION_TOKEN/aws_session_token/' \
+		-e 's/^/ /' -e 's/=/ =/' | \
+	awk -v profile="$$AWS_PROFILE" 'BEGIN {print "["profile"]"} {print}' > ~/.aws/credentials
