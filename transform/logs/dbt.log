@@ -1,0 +1,31 @@
+[0m16:04:03.793610 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'start', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7a6975b88f80>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7a697584a1e0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7a69759f72f0>]}
+
+
+============================== 16:04:03.797765 | 75dcdf83-69fb-426e-bd68-e85a83ab29a5 ==============================
+[0m16:04:03.797765 [info ] [MainThread]: Running with dbt=1.10.13
+[0m16:04:03.798846 [debug] [MainThread]: running dbt with arguments {'introspect': 'True', 'use_experimental_parser': 'False', 'log_path': 'logs', 'no_print': 'None', 'partial_parse': 'True', 'log_cache_events': 'False', 'target_path': 'None', 'log_format': 'default', 'quiet': 'False', 'send_anonymous_usage_stats': 'True', 'warn_error': 'None', 'write_json': 'True', 'version_check': 'True', 'profiles_dir': '/root/.dbt', 'empty': 'None', 'indirect_selection': 'eager', 'fail_fast': 'False', 'cache_selected_only': 'False', 'warn_error_options': 'WarnErrorOptionsV2(error=[], warn=[], silence=[])', 'debug': 'False', 'static_parser': 'True', 'printer_width': '80', 'invocation_command': 'dbt init', 'use_colors': 'True'}
+[0m16:04:03.809740 [info ] [MainThread]: Creating dbt configuration folder at /root/.dbt
+[0m16:04:22.082319 [debug] [MainThread]: Starter project path: /usr/local/lib/python3.12/site-packages/dbt/include/starter_project
+[0m16:04:22.407481 [info ] [MainThread]: 
+Your new dbt project "pypi_duckdb_stats" was created!
+
+For more information on how to configure the profiles.yml file,
+please consult the dbt documentation here:
+
+  https://docs.getdbt.com/docs/configure-your-profile
+
+One more thing:
+
+Need help? Don't hesitate to reach out to us via GitHub issues or on Slack:
+
+  https://community.getdbt.com/
+
+Happy modeling!
+
+[0m16:04:22.409886 [info ] [MainThread]: Setting up your profile.
+[0m16:04:26.892047 [info ] [MainThread]: Profile pypi_duckdb_stats written to /root/.dbt/profiles.yml using target's sample configuration. Once updated, you'll be able to start developing with dbt.
+[0m16:04:26.912895 [debug] [MainThread]: Resource report: {"command_name": "init", "command_success": true, "command_wall_clock_time": 23.255913, "process_in_blocks": "3848", "process_kernel_time": 0.214573, "process_mem_max_rss": "112232", "process_out_blocks": "368", "process_user_time": 1.813755}
+[0m16:04:26.920408 [debug] [MainThread]: Command `dbt init` succeeded at 16:04:26.920204 after 23.26 seconds
+[0m16:04:26.929698 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7a6975b40ef0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7a6975933ef0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7a6975fe2ae0>]}
+[0m16:04:26.938458 [debug] [MainThread]: Flushing usage events
+[0m16:04:27.695375 [debug] [MainThread]: An error was encountered while trying to flush usage events
