@@ -9,3 +9,6 @@ wheels/
 # Virtual environments
 .venv
 .coverage
+
+# environment variables
+.env
