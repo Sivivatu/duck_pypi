@@ -1,16 +1,20 @@
 from typing import Type
 import pyarrow as pa
 from pydantic import BaseModel, Field, ValidationError
+import os
 
 from datetime import datetime
 from typing import Optional, Union, List, Annotated
+from loguru import logger
 
+validate = os.getenv("VALIDATE", False)
 
 class PypiJobParameters(BaseModel):
     start_date: str = "2023-01-01"
     end_date: str = "2023-12-31"
     pypi_project: str = "duckdb"
     table_name: str
+    database_name: str = "my_db"
     gcp_project: str
     timestamp_column: str = "timestamp"
     destination: Annotated[
@@ -78,6 +82,104 @@ class FileDownloads(BaseModel):
     tls_protocol: Optional[str] = None
     tls_cipher: Optional[str] = None
 
+    @classmethod
+    def duckdb_schema(cls, table_name="pypi_file_downloads"):
+        return f"""
+        CREATE TABLE IF NOT EXISTS {table_name} (
+            timestamp TIMESTAMP WITH TIME ZONE,
+            country_code VARCHAR,
+            url VARCHAR,
+            project VARCHAR,
+            file STRUCT("filename" VARCHAR, "project" VARCHAR, "version" VARCHAR, "type" VARCHAR),
+            details STRUCT("installer" STRUCT("name" VARCHAR, "version" VARCHAR), "python" VARCHAR, "implementation" STRUCT("name" VARCHAR, "version" VARCHAR), "distro" STRUCT("name" VARCHAR, "version" VARCHAR, "id" VARCHAR, "libc" STRUCT("lib" VARCHAR, "version" VARCHAR)), "system" STRUCT("name" VARCHAR, "release" VARCHAR), "cpu" VARCHAR, "openssl_version" VARCHAR, "setuptools_version" VARCHAR, "rustc_version" VARCHAR, "ci" BOOLEAN),
+            tls_protocol VARCHAR,
+            tls_cipher VARCHAR
+        )
+        """
+
+    @classmethod
+    def pyarrow_schema(cls):
+        return pa.schema(
+            [
+                pa.field("timestamp", pa.timestamp("us", tz="UTC")),
+                pa.field("country_code", pa.string()),
+                pa.field("url", pa.string()),
+                pa.field("project", pa.string()),
+                pa.field(
+                    "file",
+                    pa.struct(
+                        [
+                            pa.field("filename", pa.string()),
+                            pa.field("project", pa.string()),
+                            pa.field("version", pa.string()),
+                            pa.field("type", pa.string()),
+                        ]
+                    ),
+                ),
+                pa.field(
+                    "details",
+                    pa.struct(
+                        [
+                            pa.field(
+                                "installer",
+                                pa.struct(
+                                    [
+                                        pa.field("name", pa.string()),
+                                        pa.field("version", pa.string()),
+                                    ]
+                                ),
+                            ),
+                            pa.field("python", pa.string()),
+                            pa.field(
+                                "implementation",
+                                pa.struct(
+                                    [
+                                        pa.field("name", pa.string()),
+                                        pa.field("version", pa.string()),
+                                    ]
+                                ),
+                            ),
+                            pa.field(
+                                "distro",
+                                pa.struct(
+                                    [
+                                        pa.field("name", pa.string()),
+                                        pa.field("version", pa.string()),
+                                        pa.field("id", pa.string()),
+                                        pa.field(
+                                            "libc",
+                                            pa.struct(
+                                                [
+                                                    pa.field("lib", pa.string()),
+                                                    pa.field("version", pa.string()),
+                                                ]
+                                            ),
+                                        ),
+                                    ]
+                                ),
+                            ),
+                            pa.field(
+                                "system",
+                                pa.struct(
+                                    [
+                                        pa.field("name", pa.string()),
+                                        pa.field("release", pa.string()),
+                                    ]
+                                ),
+                            ),
+                            pa.field("cpu", pa.string()),
+                            pa.field("openssl_version", pa.string()),
+                            pa.field("setuptools_version", pa.string()),
+                            pa.field("rustc_version", pa.string()),
+                            pa.field("ci", pa.bool_()),
+                        ]
+                    ),
+                ),
+                pa.field("tls_protocol", pa.string()),
+                pa.field("tls_cipher", pa.string()),
+            ]
+        )
+
 
 class TableValidationError(Exception):
     """Raised when one or more rows in a PyArrow table fail Pydantic validation."""
@@ -94,7 +196,11 @@ def validate_table(table: pa.Table, model: Type[BaseModel]):
     :param model: Pydantic model to validate against.
     :raises: TableValidationError
     """
+    if not validate:
+        logger.info("Skipping table validation as VALIDATE is set to False")
+        return
     errors = []
+    logger.info(f"Validating table with {table.num_rows} rows against {model.__name__}")
 
     for i in range(table.num_rows):
         row = {column: table[column][i].as_py() for column in table.column_names}

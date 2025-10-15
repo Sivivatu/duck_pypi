@@ -28,7 +28,7 @@ class ArrowTableLoadingBuffer:
     def initialize_connection(self, destination, sql):
         if destination == "md":
             logger.info("Connecting to MotherDuck...")
-            if not os.environ.get("motherduck_token"):
+            if not os.environ.get("MOTHERDUCK_TOKEN"):
                 raise ValueError(
                     "MotherDuck token is required. Set the environment variable 'MOTHERDUCK_TOKEN'."
                 )

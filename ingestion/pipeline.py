@@ -13,7 +13,6 @@ from ingestion.models import (
     PypiJobParameters,
 )
 
-
 def main(params: PypiJobParameters):
     start_time = datetime.now()
     logger.info(f"Starting job with parameters: {params}")
