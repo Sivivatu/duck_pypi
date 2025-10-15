@@ -17,3 +17,4 @@ wheels/
 # Local file storage.
 duckdb.csv
 duckdb.parquet
+my_db.db
