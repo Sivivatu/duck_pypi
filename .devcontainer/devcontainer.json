@@ -32,7 +32,8 @@
 				"wayou.vscode-todo-highlight",
 				"patbenatar.advanced-new-file",
 				"ms-python.isort",
-				"tamasfe.even-better-toml"
+				"tamasfe.even-better-toml",
+				"ms-azuretools.vscode-containers"
 			]
 		}
 	}
