@@ -21,3 +21,6 @@ my_db.db
 
 # dbt cloud configuration file
 dbt_cloud.yml
+
+# dbt artifacts
+transform/logs/
