@@ -1,9 +1,16 @@
 # Stage 1: Base
-FROM python:3.12 AS base
+# FROM python:3.12 AS base
+# Use a Python image with uv pre-installed
+# FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS base
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm AS base
+
+# Setup a non-root user
+RUN groupadd --system --gid 999 nonroot \
+    && useradd --system --gid 999 --uid 999 --create-home nonroot
 
 # Install UV via pip
 # Install UV via image copy
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+# COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 # RUN pip install uv --no-cache-dir
 RUN curl https://install.duckdb.org | sh
 

@@ -13,8 +13,7 @@
 	},
 
 	"mounts": [
-		"source=${env:USERPROFILE}/.config/gcloud,target=/root/.config/gcloud,type=bind"
-		// "source=${env:USERPROFILE}/.aws,target=/root/.aws,type=bind"
+		"source=${localWorkspaceFolder}/profile.yml,target=/root/.dbt/profiles.yml,type=bind"
 	],
 
 	// Configure tool-specific properties.
