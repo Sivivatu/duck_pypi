@@ -3,7 +3,9 @@ pypi_duckdb_stats:
   outputs:
     dev:
       type: duckdb
-      path: 'my_db.db'
+      path: '/workspaces/duck_pypi/my_db.db'
+      schema: main
     prod:
       type: duckdb
       path: "md:my_db"
+      schema: main
