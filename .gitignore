@@ -24,3 +24,4 @@ dbt_cloud.yml
 
 # dbt artifacts
 transform/logs/
+logs/
