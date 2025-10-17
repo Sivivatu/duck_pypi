@@ -3,8 +3,10 @@
     "python-envs.pythonProjects": [],
     "python.analysis.autoImportCompletions": true,
     "advancedNewFile.exclude": {
+
         "**/transform/logs/**": true,
         "**/transform/**/dbt_internal_packages/**": true,
         "**/transform/**/logs/**": true,
+        "**/dbt_packages/**": true,
     }
 }
