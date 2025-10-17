@@ -10,21 +10,13 @@ sources:
           - name: date
             description: "Date of the download"
           - name: system_name
-            description: "Name of the system where the package was downloaded to (e.g., Linux, Windows)"
-            # data_tests:
-            #   - accepted_values: 
-            #     arguments:
-            #         values: ['Linux', 'Windows', 'macOS']
+            description: "Name of the system where the package was downloaded to (e.g., Linux, Windows, macOS)"
           - name: system_release
             description: "Version of the system where the package was downloaded to"
           - name: version
             description: "Version of the package"
           - name: package
-            description: "Name of the package - This is filted to duckdb and should only be duckdb"
-            # data_tests:
-            #   - accepted_values: 
-            #     arguments:
-            #         values: ['duckdb']
+            description: "Name of the package - This is filtered to duckdb and should only be duckdb"
           - name: country_code
             description: "Country code of the download source"
           - name: cpu
