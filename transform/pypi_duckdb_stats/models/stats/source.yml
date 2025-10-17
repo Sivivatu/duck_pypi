@@ -1,0 +1,34 @@
+sources:
+  - name: my_db
+    description: "Raw data from PyPI downloads originally hosed in BigQuery and extracted from the ingestion process"
+    database: my_db
+    schema: main
+    tables:
+      - name: file_downloads
+        description: "Table containing package metadata from PyPI"
+        columns:
+          - name: date
+            description: "Date of the download"
+          - name: system_name
+            description: "Name of the system where the package was downloaded to (e.g., Linux, Windows)"
+            # data_tests:
+            #   - accepted_values: 
+            #     arguments:
+            #         values: ['Linux', 'Windows', 'macOS']
+          - name: system_release
+            description: "Version of the system where the package was downloaded to"
+          - name: version
+            description: "Version of the package"
+          - name: package
+            description: "Name of the package - This is filted to duckdb and should only be duckdb"
+            # data_tests:
+            #   - accepted_values: 
+            #     arguments:
+            #         values: ['duckdb']
+          - name: country_code
+            description: "Country code of the download source"
+          - name: cpu
+            description: "CPU architecture of the system where the package was downloaded to"
+          - name: python_version
+            description: "Python version used to download the package"
+            
