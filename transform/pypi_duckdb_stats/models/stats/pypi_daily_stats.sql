@@ -15,7 +15,7 @@ with pre_agg_data as (SELECT
             split_part(details.python, '.', 2)
         ) 
         end as python
-from {{ source('my_db', 'file_downloads') }}
+from {{ dbt_unit_testing.source('my_db', 'file_downloads') }}
 )
 
 select 
@@ -30,14 +30,14 @@ select
         cpu,
         python
     )) as id,
-    date,
+    date as downloaded_at,
     system_name,
     system_release,
-    version,
+    version as package_version,
     project,
     country_code,
     cpu,
-    python,
+    python as normalized_python_version,
     count(*) as daily_download_sum
 from pre_agg_data
 group by
