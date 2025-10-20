@@ -21,14 +21,14 @@ pypi-ingest:
 pypi-dbt:
 	cd $$DBT_FOLDER && \
 	dbt build \
-# 		--vars '{"start_date": "'$$DBT_START_DATE'","end_date": "'$$DBT_END_DATE'"}' \
 		--target $$DBT_TARGET
+# 		--vars '{"start_date": "'$$DBT_START_DATE'","end_date": "'$$DBT_END_DATE'"}' \
 
 pypi-dbt-run:
 	cd $$DBT_FOLDER && \
 	dbt run \
-# 		--vars '{"start_date": "'$$DBT_START_DATE'","end_date": "'$$DBT_END_DATE'"}' \
 		--target $$DBT_TARGET
+# 		--vars '{"start_date": "'$$DBT_START_DATE'","end_date": "'$$DBT_END_DATE'"}' \
 
 pypi-dbt-test:
 	cd $$DBT_FOLDER && \

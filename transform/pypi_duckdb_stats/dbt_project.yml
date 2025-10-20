@@ -32,7 +32,6 @@ clean-targets:         # directories to be removed by `dbt clean`
 models:
   pypi_duckdb_stats:
     +materialized: " {{ 'incremental' if target.name == 'prod' else 'table' }} "
-    # +materialized: " {{ 'incremental' if target.name == 'prod' else 'table' }} "
     # +unique_key: load_id
     # +pre-hook: "{% if target.name == 'dev' %} CALL load_aws_credentials(){% endif %}"
     # +post-hook: "{% if target.name == 'dev' %}{{ export_partition_data('downloaded_at', this.model) }}{% endif %}"
