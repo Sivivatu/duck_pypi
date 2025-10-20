@@ -1,0 +1,31 @@
+models:
+  - name: pypi_daily_stats
+    description: "Daily aggregated download statistics for the duckdb package from PyPI"
+    columns:
+      - name: id
+        description: "Deterministic MD5 hash ID for each record based on date and normalized python_version"
+        data_tests:
+          - unique
+          - not_null
+      - name: downloaded_at
+        description: "Date of the downloads"
+      - name: system_name
+        description: "Name of the system where the package was downloaded to (e.g., Linux, Windows, macOS)"
+      - name: system_release
+        description: "Version of the system where the package was downloaded to"
+      - name: package_version
+        description: "Version of the duckdb package downloaded"
+      - name: project
+        description: "Name of the project - This is filtered to duckdb"
+        data_tests:
+          - accepted_values: 
+              arguments:
+                values: ['duckdb']
+      - name: country_code
+        description: "Country code of the download source"
+      - name: cpu
+        description: "CPU architecture of the system where the package was downloaded to"
+      - name: normalized_python_version
+        description: "Normalized Python version (major.minor) used for downloads"
+      - name: daily_download_sum
+        description: "Total number of downloads for the duckdb package on the given date and python version"

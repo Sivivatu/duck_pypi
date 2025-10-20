@@ -1,6 +1,8 @@
 -include .env
 export
 
+DBT_FOLDER=transform/pypi_duckdb_stats
+DBT_TARGET=dev
 
 pypi-ingest:
 	uv run python -m ingestion.pipeline \
@@ -15,6 +17,24 @@ pypi-ingest:
 		--aws_profile $$AWS_PROFILE \
 
 # optional s3-upload args
+
+pypi-dbt:
+	cd $$DBT_FOLDER && \
+	dbt build \
+# 		--vars '{"start_date": "'$$DBT_START_DATE'","end_date": "'$$DBT_END_DATE'"}' \
+		--target $$DBT_TARGET
+
+pypi-dbt-run:
+	cd $$DBT_FOLDER && \
+	dbt run \
+# 		--vars '{"start_date": "'$$DBT_START_DATE'","end_date": "'$$DBT_END_DATE'"}' \
+		--target $$DBT_TARGET
+
+pypi-dbt-test:
+	cd $$DBT_FOLDER && \
+	dbt test --target $$DBT_TARGET \
+		--vars '{"start_date": "2023-04-01","end_date": "2024-04-07"}' \
+
 
 format:
 	ruff format .
