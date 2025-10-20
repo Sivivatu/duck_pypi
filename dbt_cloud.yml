@@ -1,0 +1,14 @@
+version: "1"
+context:
+  active-host: "tg509.us1.dbt.com"
+  active-project: "387070"
+projects:
+  - project-name: "Training"
+    project-id: "387070"
+    account-name: "KV05418.aws-eu-west-2"
+    account-id: "217750"
+    account-host: "tg509.us1.dbt.com"
+    token-name: "cloud-cli-148d"
+    token-value: "dbtu_RxwZen0b_w3ziJnPschWRFqlqDfmumJGKa-T0_RAIU6L4jgV38"
+
+
