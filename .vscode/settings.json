@@ -8,5 +8,12 @@
         "**/transform/**/dbt_internal_packages/**": true,
         "**/transform/**/logs/**": true,
         "**/dbt_packages/**": true,
-    }
+    },
+    "editor.acceptSuggestionOnEnter": true,
+    "editor.quickSuggestions": {
+        "other": false,
+        "comments": false,
+        "strings": false
+    },
+    "editor.quickSuggestionsDelay": 300
 }
