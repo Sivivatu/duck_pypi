@@ -5,7 +5,7 @@ title: Welcome to Evidence
 
 ```test_connection
 
-select 1 from motherduck.nyc_service_request_volume limit 1 
+select 1 from sample_data.nyc.service_requests limit 1
 
 ```
 

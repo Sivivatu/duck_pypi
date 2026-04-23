@@ -9,7 +9,7 @@
         "**/transform/**/logs/**": true,
         "**/dbt_packages/**": true,
     },
-    "editor.acceptSuggestionOnEnter": true,
+    "editor.acceptSuggestionOnEnter": "on",
     "editor.quickSuggestions": {
         "other": false,
         "comments": false,
